@@ -1,0 +1,6 @@
+framework module Pods_LTMAN_GRAPHQL {
+  umbrella header "Pods-LTMAN_GRAPHQL-umbrella.h"
+
+  export *
+  module * { export * }
+}

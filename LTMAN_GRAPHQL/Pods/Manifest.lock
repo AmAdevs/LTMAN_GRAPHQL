@@ -1,0 +1,22 @@
+PODS:
+  - Apollo (0.15.0):
+    - Apollo/Core (= 0.15.0)
+  - Apollo/Core (0.15.0)
+  - Kingfisher (4.10.1)
+
+DEPENDENCIES:
+  - Apollo
+  - Kingfisher
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - Apollo
+    - Kingfisher
+
+SPEC CHECKSUMS:
+  Apollo: a103aa59622fceb089063517db058e3d37d7c0ca
+  Kingfisher: c148cd7b47ebde9989f6bc7c27dcaa79d81279a0
+
+PODFILE CHECKSUM: 55cc2ddc14c4ef7169fe063191efc6d34eaf85f8
+
+COCOAPODS: 1.7.5

@@ -1,0 +1,19 @@
+query ar {
+    articles {
+        range(limit: 1000) {
+            data {
+                teaser {
+                    ...PostDetails
+                }
+            }
+        }
+    }
+}
+
+
+fragment PostDetails on ArticleTeaser {
+    title
+    photo
+}
+
+
