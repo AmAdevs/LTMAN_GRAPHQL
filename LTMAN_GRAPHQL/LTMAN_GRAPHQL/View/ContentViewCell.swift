@@ -32,7 +32,7 @@ class ContentViewCell: UICollectionViewCell {
     
     let photoContent: UIImageView = {
         let image = UIImageView()
-        image.image = UIImage(named: "xp")
+        image.image = UIImage(named: "")
         image.contentMode = .scaleAspectFill
         image.layer.masksToBounds = true
         image.layer.cornerRadius = 0
@@ -42,9 +42,15 @@ class ContentViewCell: UICollectionViewCell {
     
     var photoURL: String? {
         didSet {
-            guard let getPhotoURL = self.photoURL,
-                let url = URL(string: getPhotoURL) else { return }
-            photoContent.kf.setImage(with: url)
+            let getPhotoURL = self.photoURL
+            if getPhotoURL == nil {
+                titleContent.numberOfLines = 0
+            } else {
+                titleContent.numberOfLines = 2
+                let url = URL(string: getPhotoURL!)
+                photoContent.kf.setImage(with: url)
+            }
+         
         }
     }
     
