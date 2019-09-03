@@ -23,6 +23,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.makeKeyAndVisible()
         let layout = UICollectionViewFlowLayout()
         window?.rootViewController = UINavigationController(rootViewController: ContentCollectionViewController(collectionViewLayout: layout))
+        apollo.cacheKeyForObject = { $0["id"] }
         return true
     }
 
