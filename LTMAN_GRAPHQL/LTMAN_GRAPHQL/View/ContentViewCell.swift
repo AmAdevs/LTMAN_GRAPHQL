@@ -39,6 +39,15 @@ class ContentViewCell: UICollectionViewCell {
         return image
     }()
     
+    let idLabel: UILabel = {
+        let label = UILabel()
+        label.text = ""
+        label.textColor = .black
+        label.font = UIFont.boldSystemFont(ofSize: 14)
+        label.numberOfLines = 0
+        return label
+    }()
+    
     
     var photoURL: String? {
         didSet {
