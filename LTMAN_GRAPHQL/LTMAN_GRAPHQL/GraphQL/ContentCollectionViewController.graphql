@@ -1,13 +1,18 @@
-query ar {
+query ar($postId: Int = 10, $id: ID) {
     articles {
-        range(limit: 1000) {
+        range(limit: $postId, at: $id) {
             data {
+                ...inId
                 teaser {
                     ...PostDetails
                 }
             }
         }
     }
+}
+
+fragment inId on Article {
+    id
 }
 
 

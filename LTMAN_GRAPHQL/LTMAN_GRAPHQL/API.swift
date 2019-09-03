@@ -3,13 +3,14 @@
 import Apollo
 
 public final class ArQuery: GraphQLQuery {
-  /// query ar {
+  /// query ar($postId: Int = 10, $id: ID) {
   ///   articles {
   ///     __typename
-  ///     range(limit: 1000) {
+  ///     range(limit: $postId, at: $id) {
   ///       __typename
   ///       data {
   ///         __typename
+  ///         ...inId
   ///         teaser {
   ///           __typename
   ///           ...PostDetails
@@ -19,13 +20,22 @@ public final class ArQuery: GraphQLQuery {
   ///   }
   /// }
   public let operationDefinition =
-    "query ar { articles { __typename range(limit: 1000) { __typename data { __typename teaser { __typename ...PostDetails } } } } }"
+    "query ar($postId: Int = 10, $id: ID) { articles { __typename range(limit: $postId, at: $id) { __typename data { __typename ...inId teaser { __typename ...PostDetails } } } } }"
 
   public let operationName = "ar"
 
-  public var queryDocument: String { return operationDefinition.appending(PostDetails.fragmentDefinition) }
+  public var queryDocument: String { return operationDefinition.appending(InId.fragmentDefinition).appending(PostDetails.fragmentDefinition) }
 
-  public init() {
+  public var postId: Int?
+  public var id: GraphQLID?
+
+  public init(postId: Int? = nil, id: GraphQLID? = nil) {
+    self.postId = postId
+    self.id = id
+  }
+
+  public var variables: GraphQLMap? {
+    return ["postId": postId, "id": id]
   }
 
   public struct Data: GraphQLSelectionSet {
@@ -59,7 +69,7 @@ public final class ArQuery: GraphQLQuery {
 
       public static let selections: [GraphQLSelection] = [
         GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
-        GraphQLField("range", arguments: ["limit": 1000], type: .nonNull(.object(Range.selections))),
+        GraphQLField("range", arguments: ["limit": GraphQLVariable("postId"), "at": GraphQLVariable("id")], type: .nonNull(.object(Range.selections))),
       ]
 
       public private(set) var resultMap: ResultMap
@@ -131,6 +141,7 @@ public final class ArQuery: GraphQLQuery {
 
           public static let selections: [GraphQLSelection] = [
             GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+            GraphQLFragmentSpread(InId.self),
             GraphQLField("teaser", type: .nonNull(.object(Teaser.selections))),
           ]
 
@@ -138,10 +149,6 @@ public final class ArQuery: GraphQLQuery {
 
           public init(unsafeResultMap: ResultMap) {
             self.resultMap = unsafeResultMap
-          }
-
-          public init(teaser: Teaser) {
-            self.init(unsafeResultMap: ["__typename": "Article", "teaser": teaser.resultMap])
           }
 
           public var __typename: String {
@@ -159,6 +166,32 @@ public final class ArQuery: GraphQLQuery {
             }
             set {
               resultMap.updateValue(newValue.resultMap, forKey: "teaser")
+            }
+          }
+
+          public var fragments: Fragments {
+            get {
+              return Fragments(unsafeResultMap: resultMap)
+            }
+            set {
+              resultMap += newValue.resultMap
+            }
+          }
+
+          public struct Fragments {
+            public private(set) var resultMap: ResultMap
+
+            public init(unsafeResultMap: ResultMap) {
+              self.resultMap = unsafeResultMap
+            }
+
+            public var inId: InId {
+              get {
+                return InId(unsafeResultMap: resultMap)
+              }
+              set {
+                resultMap += newValue.resultMap
+              }
             }
           }
 
@@ -217,6 +250,50 @@ public final class ArQuery: GraphQLQuery {
           }
         }
       }
+    }
+  }
+}
+
+public struct InId: GraphQLFragment {
+  /// fragment inId on Article {
+  ///   __typename
+  ///   id
+  /// }
+  public static let fragmentDefinition =
+    "fragment inId on Article { __typename id }"
+
+  public static let possibleTypes = ["Article"]
+
+  public static let selections: [GraphQLSelection] = [
+    GraphQLField("__typename", type: .nonNull(.scalar(String.self))),
+    GraphQLField("id", type: .nonNull(.scalar(GraphQLID.self))),
+  ]
+
+  public private(set) var resultMap: ResultMap
+
+  public init(unsafeResultMap: ResultMap) {
+    self.resultMap = unsafeResultMap
+  }
+
+  public init(id: GraphQLID) {
+    self.init(unsafeResultMap: ["__typename": "Article", "id": id])
+  }
+
+  public var __typename: String {
+    get {
+      return resultMap["__typename"]! as! String
+    }
+    set {
+      resultMap.updateValue(newValue, forKey: "__typename")
+    }
+  }
+
+  public var id: GraphQLID {
+    get {
+      return resultMap["id"]! as! GraphQLID
+    }
+    set {
+      resultMap.updateValue(newValue, forKey: "id")
     }
   }
 }
