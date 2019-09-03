@@ -7,11 +7,23 @@
 //
 
 import UIKit
+import Apollo
+
 
 class ContentCollectionViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
 
   
     private var Cell = "Cell"
+    private var LoadingCell = "LoadingCell"
+    
+    var contentsID: [InId] = []
+    var getContent: [PostDetails] = []
+    
+    var allQueryWatcher: GraphQLQueryWatcher<ArQuery>?
+    var limitPostId = 10
+    var ID = "5d6e023b6525240caf55f392"
+    var fetchingMore = false
+    
     
     let titleLabel: UILabel = {
         let label = UILabel()
@@ -37,11 +49,13 @@ class ContentCollectionViewController: UICollectionViewController, UICollectionV
             collectionView.reloadData()
         }
     }
+
+
     
-    func queryContent() {
-        let getAllPostsQuery = ArQuery()
-        apollo.fetch(query: getAllPostsQuery, cachePolicy: .fetchIgnoringCacheData) {
-            [weak self] result in
+    func queryContent(limit limitPostId: Int, id ID: String) {
+        let getAllPostsQuery = ArQuery(postId: limitPostId, id: ID)
+        allQueryWatcher = apollo.watch(query: getAllPostsQuery, cachePolicy: .returnCacheDataAndFetch) {
+            [unowned self] result in
             switch result {
             case .failure(let error):
                 print(error.localizedDescription)
@@ -51,10 +65,13 @@ class ContentCollectionViewController: UICollectionViewController, UICollectionV
                     print("Cannot load all posts")
                     return
                 }
-                self?.contents = allPosts.map({$0.teaser.fragments.postDetails})
-                print(allPosts)
                 
+                self.contents = allPosts.map({$0.teaser.fragments.postDetails})
+                self.contentsID = allPosts.map({$0.fragments.inId})
+          
+
             }
+            
         }
         
     }
@@ -64,18 +81,26 @@ class ContentCollectionViewController: UICollectionViewController, UICollectionV
         super.viewDidLoad()
         
         setUpView()
-        queryContent()
-        
+        queryContent(limit: limitPostId, id: ID)
     }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+    }
+    
     
     func setUpView() {
         
         navigationItem.titleView = titleLabel
         navigationController?.navigationBar.isTranslucent = false
         navigationController?.navigationBar.barTintColor = .white
-        navigationController?.navigationBar.setBackgroundImage(UIImage(), for: .default)
-        navigationController?.navigationBar.shadowImage = UIImage()
+//        navigationController?.navigationBar.setBackgroundImage(UIImage(), for: .default)
+//        navigationController?.navigationBar.shadowImage = UIImage()
         navigationController?.navigationItem.largeTitleDisplayMode = .automatic
+        
+        let loadingNib = UINib(nibName: "Loading", bundle: nil)
+        collectionView.register(loadingNib, forCellWithReuseIdentifier: LoadingCell)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
         
         
         collectionView.backgroundColor = UIColor.whiteAlpha(alpha: 0.90)
@@ -83,22 +108,48 @@ class ContentCollectionViewController: UICollectionViewController, UICollectionV
         //collectionView.showsVerticalScrollIndicator = false
     }
     
+    
+    override func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 2
+    }
+    
  
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return contents.count
+        if section == 0 {
+            return contents.count
+        } else if section == 1 && fetchingMore {
+            return 1
+        }
+        return 0
+        
     }
     
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let item = collectionView.dequeueReusableCell(withReuseIdentifier: Cell, for: indexPath) as! ContentViewCell
-        item.titleContent.text = contents[indexPath.row].title
-        item.photoURL = contents[indexPath.row].photo
-        return item
+        let section = indexPath.section
+        if section == 0 {
+            let item = collectionView.dequeueReusableCell(withReuseIdentifier: Cell, for: indexPath) as! ContentViewCell
+            item.titleContent.text = contents[indexPath.row].title
+            item.photoURL = contents[indexPath.row].photo
+            item.idLabel.text = contentsID[indexPath.row].id
+            ID = item.idLabel.text!
+            return item
+        } else {
+            let item = collectionView.dequeueReusableCell(withReuseIdentifier: LoadingCell, for: indexPath) as! Loading
+            item.spinner.startAnimating()
+            return item
+        }
     }
 
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: view.frame.width, height: 450)
+        let section = indexPath.section
+        if section == 0 {
+            return CGSize(width: view.frame.width, height: 450)
+        } else {
+            return CGSize(width: view.frame.width, height: 30)
+        }
+     
     }
     
     
@@ -109,8 +160,29 @@ class ContentCollectionViewController: UICollectionViewController, UICollectionV
         } else {
             navigationItem.titleView = subTitleLabel
         }
+        
+        let offSetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        
+        if offSetY > contentHeight - scrollView.frame.height {
+            if !fetchingMore {
+                fectching()
+            }
+        }
     }
     
+    
+    func fectching() {
+        fetchingMore = true
+        collectionView.reloadSections(IndexSet(integer: 1))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.limitPostId += 10
+            print(self.limitPostId)
+            self.queryContent(limit: self.limitPostId, id: self.ID)
+            self.fetchingMore = false
+            self.collectionView.reloadData()
+        }
+    }
     
 }
 
